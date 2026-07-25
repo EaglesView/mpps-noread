@@ -126,6 +126,71 @@ def find_periodic_runs(buf, min_len=64, max_period=32):
 
 
 # --------------------------------------------------------------------------- #
+# stage 1: packing analysis (why cipher is shorter than plaintext)
+# --------------------------------------------------------------------------- #
+def strip_fill_runs(buf, fill, min_run=1):
+    """Remove maximal runs (>= min_run) of `fill` byte. Returns (packed, kept_mask)."""
+    out = bytearray()
+    n = len(buf)
+    i = 0
+    while i < n:
+        if buf[i] == fill:
+            j = i
+            while j < n and buf[j] == fill:
+                j += 1
+            if j - i >= min_run:
+                i = j
+                continue
+        out.append(buf[i])
+        i += 1
+    return bytes(out)
+
+
+def analyze_packing(pbody, cbody):
+    """Report how the plaintext size could shrink to the cipher size."""
+    gap = len(pbody) - len(cbody)
+    print(f"    size gap plaintext-cipher : {gap} bytes")
+    c = collections.Counter(pbody)
+    # which single fill byte, if run-stripped, best explains the gap?
+    print("    blank-byte census in plaintext (candidate Stage-1 fill):")
+    for b, _ in c.most_common(4):
+        cnt = c[b]
+        for mr in (1, 2, 8):
+            packed_len = len(strip_fill_runs(pbody, b, min_run=mr))
+            if abs((len(pbody) - packed_len) - gap) < 64 or mr == 1:
+                print(f"      fill={b:#04x} count={cnt:7d}  strip(min_run={mr}) "
+                      f"-> packed_len={packed_len}  (target {len(cbody)}, "
+                      f"delta {packed_len - len(cbody):+d})")
+
+
+def try_reconstruct_packed(pbody, cbody, args):
+    """Attempt to rebuild the packed plaintext stream matching the cipher length.
+
+    Tries stripping runs of each common blank byte; if one yields a length that
+    matches the cipher (within a small header tolerance), returns it. Otherwise
+    returns None so the caller can stop before the cipher stage.
+    """
+    if args.fill is not None:
+        packed = strip_fill_runs(pbody, args.fill, min_run=args.min_run)
+        print(f"    [manual] fill={args.fill:#04x} min_run={args.min_run} "
+              f"-> {len(packed)} bytes")
+        return packed if len(packed) == len(cbody) else packed
+    c = collections.Counter(pbody)
+    for b, _ in c.most_common(6):
+        for mr in (1, 2, 3, 4, 8, 16):
+            packed = strip_fill_runs(pbody, b, min_run=mr)
+            if len(packed) == len(cbody):
+                print(f"    [auto] exact packed match: fill={b:#04x} "
+                      f"min_run={mr} -> {len(packed)} bytes")
+                return packed
+    print("    [auto] no exact blank-strip length matched the cipher.")
+    print("          Stage-1 may use RLE/tokens or LZ compression, or the")
+    print("          plaintext isn't the raw 1MB image. Options: pass --fill/--min-run,")
+    print("          or provide the packing/region map.")
+    return None
+
+
+# --------------------------------------------------------------------------- #
 # derive  (needs a known-plaintext reference)
 # --------------------------------------------------------------------------- #
 def cmd_derive(args):
@@ -134,12 +199,20 @@ def cmd_derive(args):
     _, cbody = split_container(enc)
     _, pbody = split_container(ref)  # a plain reference has no header
 
+    print(f"cipher body         : {len(cbody)} bytes")
+    print(f"reference plaintext : {len(pbody)} bytes")
+
     if len(cbody) != len(pbody):
-        print(f"[!] size mismatch: cipher body {len(cbody)} vs "
-              f"reference {len(pbody)}.", file=sys.stderr)
-        print("    The transform may not be length-preserving, or the files are "
-              "not aligned. Trimming to the shorter length for analysis.",
-              file=sys.stderr)
+        print()
+        print("[!] length mismatch -> NOREAD is NOT length-preserving.")
+        print("    Investigating Stage-1 packing (blank-region removal) before")
+        print("    deriving the Stage-2 cipher.\n")
+        analyze_packing(pbody, cbody)
+        pbody = try_reconstruct_packed(pbody, cbody, args)
+        if pbody is None:
+            print("[!] Could not auto-reconstruct the packed stream. Stopping before")
+            print("    the cipher stage. See notes above; we may need the packing map.")
+            return
     n = min(len(cbody), len(pbody))
 
     # Hypothesis 1: XOR stream cipher.  keystream = cipher ^ plain.
@@ -243,6 +316,10 @@ def main():
     d.add_argument("encrypted")
     d.add_argument("reference")
     d.add_argument("-o", "--output")
+    d.add_argument("--fill", type=lambda x: int(x, 0), default=None,
+                   help="Stage-1 blank fill byte to strip (e.g. 0xff)")
+    d.add_argument("--min-run", type=int, default=1,
+                   help="min run length of the fill byte to strip (default 1)")
     d.set_defaults(func=cmd_derive)
 
     c = sub.add_parser("decrypt", help="decrypt a NOREAD file using a derived keystream")

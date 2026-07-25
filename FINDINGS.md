@@ -14,6 +14,25 @@ byte-aligned cipher over an (even-sized) firmware image — suggests either trai
 padding or that the payload is not a straight length-preserving cipher of the raw
 firmware.
 
+## Two-stage model (source: GTI Golf, ~1 MB stage1 tune)
+
+The plaintext firmware is ~1 MB (1048576), but the cipher body is only 811961 →
+the transform is **NOT length-preserving** (~231 KB smaller). Yet the payload
+contains exact periodic runs (571 B period-18, 386 B period-2), which compressed
+data never has. Reconciled by a **two-stage** format:
+
+1. **Stage 1 — packing**: blank regions (likely `0xFF`) of the 1 MB image are
+   omitted / run-length packed → a packed stream `P'` of ~811961 bytes.
+   (1048576 − 811961 = 236615 ≈ plausible blank content of an ME7/MED9 image.)
+2. **Stage 2 — cipher**: a position-aligned scramble on `P'` (the periodic leak
+   runs come from near-constant regions of `P'`).
+
+Reference will be the **plaintext of THIS file** (1K0907115S), pairing with the
+ciphertext we already have. Because lengths differ, `derive` first reverses the
+packing (`analyze_packing` / `try_reconstruct_packed`) to rebuild `P'`, then
+extracts the cipher keystream from `C ⊕ P'`. If Stage 1 turns out to be RLE/LZ
+rather than plain blank-strip, we need the region/packing map.
+
 ## Statistical profile of the body
 
 - Entropy ≈ **7.995 bits/byte**, all 256 byte values present → strong scrambling.
