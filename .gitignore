@@ -1,6 +1,12 @@
 # derived / output artifacts
 keystream.bin
+ks.bin
+out.bin
 *.dec
+
+# regenerable test vectors (run make_testvec.py)
+test_plain.bin
+test_noread.Bin
 __pycache__/
 *.pyc
 
