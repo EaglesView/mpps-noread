@@ -22,3 +22,9 @@ tunes/
 *.ori
 *.Bin
 *.bin
+
+# emulation venv / rootfs
+.venv-emu/
+emu-rootfs/
+module_dump*.bin
+tricore_dump*.bin

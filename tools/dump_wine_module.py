@@ -65,6 +65,44 @@ def read_mem(pid, start, end):
         return b"\x00" * size
 
 
+def dump_all(pid, regions, out_prefix):
+    """Dump every readable region; scan each for the NOREAD marker + real strings.
+
+    Intended to run WHILE the target is paused (e.g. an anti-VM dialog is on
+    screen) so any unpacked code/data is still mapped.
+    """
+    marker = b"No read file has been encrypted"
+    prefix = out_prefix.rsplit(".", 1)[0]
+    hits = []
+    total = 0
+    for start, end, perms, path in regions:
+        if "r" not in perms:
+            continue
+        data = read_mem(pid, start, end)
+        total += len(data)
+        nz = len(data) - data.count(0)
+        if nz == 0:
+            continue
+        fn = f"{prefix}_{start:012x}.bin"
+        with open(fn, "wb") as f:
+            f.write(data)
+        note = ""
+        at = data.find(marker)
+        if at >= 0:
+            note = f"  *** MARKER at +{at:#x} ***"
+            hits.append((fn, start))
+        print(f"  {start:#012x}-{end:#012x} {perms} {len(data):8d}B "
+              f"{path[:32]:32s}{note}")
+    print(f"\ndumped ~{total} bytes across readable regions")
+    if hits:
+        print("[+] NOREAD marker found in:")
+        for fn, s in hits:
+            print(f"    {fn} (base {s:#x})  <-- unpacked! import this into Ghidra")
+    else:
+        print("[!] marker NOT in any region -> the VM check runs BEFORE Obsidium "
+              "unpacks. We'll need to defeat the Wine detection instead.")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -75,6 +113,9 @@ def main():
                     help="explicit base address; dumps the region containing it")
     ap.add_argument("--anon", action="store_true",
                     help="also include large executable anonymous mappings")
+    ap.add_argument("--all", action="store_true",
+                    help="dump EVERY readable region to <output>_<addr>.bin and "
+                         "scan each for the NOREAD marker (best while a dialog is open)")
     ap.add_argument("-o", "--output", default="module_dump.bin")
     args = ap.parse_args()
 
@@ -82,6 +123,10 @@ def main():
     if not regions:
         print("no regions parsed (bad PID?)", file=sys.stderr)
         sys.exit(1)
+
+    if args.all:
+        dump_all(args.pid, regions, args.output)
+        return
 
     # select the target regions
     sel = []
