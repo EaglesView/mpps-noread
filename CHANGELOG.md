@@ -3,13 +3,17 @@
 ## 1.1.0 — 2026-07-25
 Added a simple desktop GUI and cross-platform standalone binaries.
 
-- `noread_gui.py` — minimal PySide6 window: add or drag-and-drop NOREAD `.Bin`
-  files, choose output location, **Decrypt**, per-file status log. Wraps the
-  existing `noread.decrypt_bytes` path; core CLI unchanged and still dependency-free.
+- `noread_gui.py` — minimal PySide6 window: **Open file** or **Open folder**, a
+  red/green indicator showing whether the selection is a valid NOREAD file, a
+  recursive-subfolder option with a live count of valid files, a destination
+  folder (defaults to the executable's directory), and a **Decrypt** button.
+  Wraps the existing `noread.decrypt_bytes` path; core CLI unchanged and still
+  dependency-free.
 - PyInstaller spec (`noread.spec`) producing a single windowed executable
   (`.app` bundle on macOS).
 - GitHub Actions workflow builds macOS, Windows, and Linux binaries on tag push
-  and attaches them to the GitHub Release.
+  and attaches them (with SHA256 checksums and the changelog notes) to the
+  GitHub Release.
 
 ## 1.0.0 — 2026-07-25
 Initial release. Command-line decryptor for the MPPS "NOREAD" tune format.
