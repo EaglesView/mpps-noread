@@ -1,0 +1,9 @@
+# derived / output artifacts
+keystream.bin
+*.dec
+__pycache__/
+*.pyc
+
+# reference tunes / dumps are large binaries — keep them out of git by default
+# (comment these out if you want to version a specific reference)
+*.frf
