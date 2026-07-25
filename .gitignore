@@ -31,3 +31,4 @@ tricore_dump*.bin
 *_live_*.bin
 *_unpacked_*.bin
 mpps_module.bin
+mpps_live_*.bin
