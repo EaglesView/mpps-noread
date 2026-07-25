@@ -1,0 +1,4 @@
+# GUI + packaging dependencies (the core noread CLI needs none of these).
+#   pip install -r requirements-gui.txt
+PySide6>=6.6,<7
+pyinstaller>=6.3,<7

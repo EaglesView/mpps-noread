@@ -28,7 +28,7 @@ import os
 import sys
 import zlib
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 MARKER = b"No read file has been encrypted"          # 31 bytes
 SIGNATURES = (b"encrypted", b"encryted")             # MPPS payload-locator words

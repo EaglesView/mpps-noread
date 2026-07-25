@@ -6,7 +6,8 @@ noread is a tool that allows you to remove the encryption that MPPS used on NORE
 `.Bin` that begins with `No read file has been encrypted…` and whose payload is
 scrambled. My dataset of testing is still very limited, and the reverse engineering was done on MPPS v18, newer versions might have different algorithms.
 
-Command-line, pure Python standard library, **no dependencies**. GUI is coming soon in next release.
+Command-line (pure Python standard library, **no dependencies**) plus an optional
+simple desktop **GUI** — see below.
 
 Most if not all of the reverse engineering has been done with Claude Opus 5 using (GhidraMCP by LaurieWired)[https://github.com/lauriewired/ghidramcp]. I just gave enough context & examples to get started.
 
@@ -31,6 +32,25 @@ noread decrypt file.Bin
 ```
 
 Requires Python 3.8+.
+
+## GUI
+
+A minimal desktop app is included: add or drag-and-drop NOREAD `.Bin` files,
+click **Decrypt**, and read the per-file log.
+
+Prebuilt, standalone binaries (no Python required) for **macOS, Windows and
+Linux** are attached to each [GitHub Release](https://github.com/EaglesView/mpps-noread/releases).
+Download, unzip, and run.
+
+Or run it from source:
+
+```bash
+pip install -r requirements-gui.txt
+python3 noread_gui.py
+```
+
+The GUI uses [PySide6](https://doc.qt.io/qtforpython/) (Qt for Python, LGPL); the
+core `noread` CLI stays dependency-free.
 
 ## Usage
 
@@ -83,8 +103,8 @@ python3 test_noread.py      # or: pytest test_noread.py
 
 ## Roadmap
 
-- **1.0** — command-line tool (this release).
-- **1.x** — standalone GUI executable (PyInstaller); no Python needed to run, cross-platform.
+- **1.0** — command-line tool.
+- **1.1** — simple cross-platform GUI + standalone PyInstaller binaries (this release).
 - **ideas** — pattern finder for early table detection without an `.a2l` or `.xml` file, port to web/javascript or rust WASM library.
 
 ## License
