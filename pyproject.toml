@@ -18,14 +18,19 @@ classifiers = [
   "Topic :: Utilities",
 ]
 
+[project.optional-dependencies]
+gui = ["PySide6>=6.6,<7"]
+build = ["pyinstaller>=6.3,<7"]
+
 [project.urls]
-Homepage = "https://github.com/jim/tuneman"
+Homepage = "https://github.com/EaglesView/mpps-noread"
 
 [project.scripts]
 noread = "noread:main"
+noread-gui = "noread_gui:main"
 
 [tool.setuptools]
-py-modules = ["noread"]
+py-modules = ["noread", "noread_gui"]
 
 [tool.setuptools.dynamic]
 version = { attr = "noread.__version__" }

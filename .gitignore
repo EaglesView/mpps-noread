@@ -1,3 +1,7 @@
+# PyInstaller build artifacts (noread.spec is source and IS tracked)
+build/
+dist/
+
 # derived / output artifacts
 keystream.bin
 ks.bin
