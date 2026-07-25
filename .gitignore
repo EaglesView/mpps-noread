@@ -13,3 +13,12 @@ __pycache__/
 # reference tunes / dumps are large binaries — keep them out of git by default
 # (comment these out if you want to version a specific reference)
 *.frf
+
+# MPPS program (proprietary binaries, drivers, per-ECU check DLLs)
+mpps/
+
+# ECU dumps / tunes
+tunes/
+*.ori
+*.Bin
+*.bin
