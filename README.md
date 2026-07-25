@@ -1,34 +1,41 @@
-# tuneman — MPPS NOREAD decryptor
+# tuneman — MPPS NOREAD decryptor (SOLVED)
 
-Toolkit to recover plaintext ECU firmware from the MPPS "NOREAD" encrypted `.Bin`
-format (files beginning with `No read file has been encrypted-`), **without**
-removing the NOREAD marker.
+Decrypts the MPPS "NOREAD" encrypted ECU read (`No read file has been encrypted…`)
+back to the raw firmware, **without** modifying the ECU-internal NOREAD flag.
 
-## Commands
+## Algorithm
 
-```bash
-# 1. Inspect a file (container layout, entropy, periodic leak regions)
-python3 noread.py analyze 1K0907115S.Bin
+```
+NOREAD file = marker(31B) || XOR55AA( zlib_deflate( firmware ) )
 
-# 2. Once you have a reference tune (the real firmware for the same ECU),
-#    derive the transform from the known-plaintext pair:
-python3 noread.py derive 1K0907115S.Bin reference.bin -o keystream.bin
+  marker  : "No read file has been encrypted"  (payload located via the
+            "encrypted"/"encryted" signature in the first 128 bytes)
+  XOR55AA : byte[i] ^= 0x55 if i even else 0xAA   (alternating, self-inverse)
+  then a standard zlib (78 9c) stream.
 
-# 3. Decrypt (keeps the 32-byte NOREAD header by default):
-python3 noread.py decrypt 1K0907115S.Bin --keystream keystream.bin -o out.bin
+decrypt = drop marker  ->  XOR 0x55/0xAA  ->  zlib-inflate
 ```
 
-## Status
+Recovered by unpacking MPPS's Obsidium-protected `Mpps.exe` (classic 32-bit Wine
+defeats the packer's anti-VM TLS check) and reversing the NOREAD read routine
+`FUN_0041a068` + transform `FUN_00410374`. See `FINDINGS.md` for the full trail.
 
-Container format and payload structure are characterized (see `FINDINGS.md`).
-The exact payload transform is pinned once a single aligned reference tune is
-supplied — `derive` tests the XOR-stream hypothesis and reports whether the
-keystream is position-only (→ universal decryptor) or plaintext-dependent
-(→ chaining/block cipher, needs further work).
+## Usage
 
-## Reference tune requirements
+```bash
+python3 noread.py decrypt 1K0907115S.Bin -o firmware.bin   # NOREAD -> raw firmware
+python3 noread.py analyze 1K0907115S.Bin                   # inspect
+python3 noread.py encrypt firmware.bin -o out.Bin          # inverse (testing)
+```
 
-For `derive` to work, the reference should be the **raw firmware for the same
-ECU** (`1K0907115S`), same length as the cipher payload (811961 bytes) and byte
--aligned to it. If it differs (e.g. an `.frf`/flash-container or a different
-region size), tell me and we'll handle alignment/offset first.
+Verified on `1K0907115S.Bin`: decrypts to 2,097,152 bytes (2 MB MED9.1 image,
+entropy 5.91, 423,877 `0xFF` blank bytes) containing the part number `1K0907115`
+and `MED9` strings.
+
+## Notes
+
+- The firmware's internal NOREAD flag is left untouched (clearing it corrupts
+  checksums; out of scope).
+- `encrypt` uses stock zlib, so it won't reproduce a byte-identical original
+  (compressor differs), but decrypt/round-trip is exact.
+```

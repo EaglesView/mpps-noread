@@ -1,3 +1,20 @@
+# SOLVED (2026-07-25)
+
+NOREAD file = `marker(31B)` + `XOR55AA( zlib_deflate( firmware ) )`
+- marker: `No read file has been encrypted` (payload located via "encrypted"/"encryted" signature, first 128 bytes)
+- XOR55AA: `byte[i] ^= 0x55 if i even else 0xAA` (alternating, self-inverse)
+- then a zlib `78 9c` stream.
+- **decrypt** = strip marker -> XOR 0x55/0xAA -> zlib-inflate.
+
+Recovered by unpacking Obsidium-protected `Mpps.exe` under classic 32-bit Wine
+(`wine32`, WINEARCH=win32) which defeats the anti-VM TLS callback, then reversing
+`FUN_0041a068` (NOREAD read) + `FUN_00410374` (the XOR transform). Verified: the
+sample `1K0907115S.Bin` decrypts to a 2 MB MED9.1 image containing the `1K0907115`
+part number. Implemented in `noread.py decrypt`. The notes below are the original
+reverse-engineering trail (kept for reference).
+
+---
+
 # MPPS NOREAD format — reverse-engineering notes
 
 Target sample: `1K0907115S.Bin` (VW/Audi part number; `1K0` = PQ35 platform).
