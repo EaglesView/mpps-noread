@@ -32,3 +32,6 @@ tricore_dump*.bin
 *_unpacked_*.bin
 mpps_module.bin
 mpps_live_*.bin
+
+# cloned external tool (tune-editor)
+tuneviewer/
