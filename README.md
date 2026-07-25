@@ -73,7 +73,7 @@ The algorithm was recovered by reverse-engineering MPPS's Obsidium-protected
 - `encrypt` uses stock zlib, so it won't reproduce a byte-identical original
   (the compressor differs), but decrypt / round-trip is exact.
 - For **legitimate** use — recovering your own ECU data. You are responsible for
-  how you use the output; always validate checksums before writing to an ECU.
+  how you use the output. **Always** validate checksums before writing to an ECU. I am not responsible if you brick your ecu, damage your car, or anything else that may happen to your car.
 
 ## Tests
 
