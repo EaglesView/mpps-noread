@@ -22,6 +22,8 @@ tunes/
 *.ori
 *.Bin
 *.bin
+*.json
+*.xml
 
 # emulation venv / rootfs
 .venv-emu/
@@ -35,3 +37,7 @@ mpps_live_*.bin
 
 # cloned external tool (tune-editor)
 tuneviewer/
+
+# proprietary / scraped (not part of the release)
+tools/*.exe
+tuneData_scraped/

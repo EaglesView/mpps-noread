@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mpps-noread"
+description = "Decryptor for the MPPS NOREAD encrypted ECU tune format"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "jim", email = "jbouchardprod@gmail.com" }]
+keywords = ["ecu", "tuning", "mpps", "noread", "decrypt", "med9", "bosch"]
+dynamic = ["version"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Environment :: Console",
+  "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/jim/tuneman"
+
+[project.scripts]
+noread = "noread:main"
+
+[tool.setuptools]
+py-modules = ["noread"]
+
+[tool.setuptools.dynamic]
+version = { attr = "noread.__version__" }
